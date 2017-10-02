@@ -1,0 +1,57 @@
+Ubuntu
+
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.3 LTS
+Release:	16.04
+Codename:	xenial
+
+sudo apt-get update && sudo apt-get upgrade -y
+#install the package maintainer's version
+
+
+#log in as root and update your password
+sudo su
+passwd root
+
+
+#sudo: unable to resolve host ip-
+echo "127.0.0.1 $(hostname)" >> /etc/hosts
+
+
+#Java Runtime Environment
+sudo apt-get install openjdk-8-jre -y
+
+
+#install node
+sudo apt install nodejs-legacy
+
+
+#install NPM
+sudo apt install npm
+
+
+#install xvfb
+sudo apt install xvfb
+
+
+#install libraries
+sudo apt-get install libxi6 libgconf-2-4
+
+
+#install selenium
+sudo npm install selenium-standalone@latest -g
+sudo selenium-standalone install
+
+
+#install chrome browser
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list
+sudo apt-get install google-chrome-stable
+
+
+#install firefox browser
+sudo apt-get install firefox
+
+
+#run selenium using XVFB 
+xvfb-run -a --server-args="-screen 0, 1366x768x24" selenium-standalone start -- -debug
