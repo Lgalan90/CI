@@ -55,3 +55,6 @@ sudo apt-get install firefox
 
 #run selenium using XVFB 
 xvfb-run -a --server-args="-screen 0, 1366x768x24" selenium-standalone start -- -debug
+
+sudo ln -s /usr/local/bin/selenium-standalone /etc/init.d/
+sudo update-rc.d selenium-standalone defaults
