@@ -47,6 +47,8 @@ node {
   } finally {
     // Success or failure, always send notifications
     notifyBuild(currentBuild.result)
+    //Publishes test results onto test result analyzer
+    step([$class: 'NUnitPublisher', testResultsPattern: 'TestResult.xml', debug: false, keepJUnitReports: true, skipJUnitArchiver:false, failIfNoResults: true])
   }
 }
 
