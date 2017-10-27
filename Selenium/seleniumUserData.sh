@@ -5,7 +5,6 @@ sudo apt-get install openjdk-8-jre -y
 sudo apt-get install unzip
 sudo apt-get install dbus-x11
 sudo apt install xvfb -y
-crontab -l | { cat; echo "@reboot sh -c 'Xvfb :99 -ac -screen 0 1366x768x24> /tmp/xvfb.log 2>&1 &'"; } | crontab -
 sudo apt-get install firefox -y
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
 echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list
@@ -16,10 +15,10 @@ tar -xvzf geckodriver-v0.18.0-linux64.tar.gz
 sudo rm geckodriver-v0.18.0-linux64.tar.gz
 sudo chmod +x geckodriver
 sudo cp geckodriver /usr/local/bin/
-sudo wget https://chromedriver.storage.googleapis.com/2.32/chromedriver_linux64.zip
+sudo wget https://chromedriver.storage.googleapis.com/2.33/chromedriver_linux64.zip
 sudo unzip chromedriver_linux64.zip
 sudo rm chromedriver_linux64.zip
-sudo chmod +x chromedriver
+sudo chmod 755 chromedriver
 sudo cp chromedriver /usr/local/bin/
 mkdir /usr/lib/selenium
 cd /usr/lib/selenium
@@ -55,7 +54,11 @@ case "${1:-''}" in
         then
             echo "Stopping Selenium..."
             rm /tmp/selenium.pid
-            kill $(ps aux | grep '[s]elenium' | awk '{print $2}')
+            sudo kill $(ps aux | grep '[s]elenium' | awk '{print $2}')
+        #in case the process doesn't stop
+        elif [ ! -f /tmp/selenium.pid ]  
+        then
+            echo "Process may not have stopped, try running: sudo ps -ef | grep selenium and kill the processes. If no process are running, try to start again"
         else
                     echo "Selenium could not be stopped...Selenium is not running."
         fi
