@@ -1,0 +1,123 @@
+Ubuntu Documentation
+
+Distributor ID:	Ubuntu
+Description:	Ubuntu 16.04.3 LTS
+Release:	16.04
+Codename:	xenial
+
+
+#log in as root and update your password
+sudo su
+#passwd root
+
+
+#sudo: unable to resolve host ip-
+echo "127.0.0.1 $(hostname)" >> /etc/hosts
+
+sudo apt update
+sudo apt-get update && sudo apt-get upgrade -y
+#1. install the package maintainer's version
+
+
+#Java Runtime Environment
+sudo apt-get install openjdk-8-jre -y
+
+
+#install node
+sudo apt install nodejs-legacy -y
+
+
+#install xvfb
+sudo apt install xvfb -y
+
+
+#install NPM
+sudo apt install npm -y
+
+
+#install libraries
+sudo apt-get install libxi6 libgconf-2-4 -y
+
+
+#install selenium
+sudo npm install selenium-standalone@latest -g
+#file locations
+#/usr/local/bin/selenium-standalone -> /usr/local/lib/node_modules/selenium-standalone/bin/selenium-standalone
+#/usr/local/bin/start-selenium -> /usr/local/lib/node_modules/selenium-standalone/bin/start-selenium
+#/usr/local/lib
+
+sudo selenium-standalone install
+#selenium install:
+#from: https://selenium-release.storage.googleapis.com/3.5/selenium-server-standalone-3.5.3.jar
+#to: /usr/local/lib/node_modules/selenium-standalone/.selenium/selenium-server/3.5.3-server.jar
+#---
+#chrome install:
+#from: https://chromedriver.storage.googleapis.com/2.32/chromedriver_linux64.zip
+#to: /usr/local/lib/node_modules/selenium-standalone/.selenium/chromedriver/2.32-x64-chromedriver
+#---
+#firefox install:
+#from: https://github.com/mozilla/geckodriver/releases/download/v0.18.0/geckodriver-v0.18.0-linux64.tar.gz
+#to: /usr/local/lib/node_modules/selenium-standalone/.selenium/geckodriver/0.18.0-x64-geckodriver
+
+
+#install webdrivers
+#/home/ubuntu
+sudo npm install selenium-webdriver
+
+
+#install chrome browser
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list
+sudo apt install google-chrome-stable -y
+
+
+#install firefox browser
+sudo apt-get install firefox -y
+
+
+#run selenium using XVFB 
+xvfb-run -a --server-args="-screen 0, 1366x768x24" selenium-standalone start -- -debug
+xvfb-run -a --server-args="-screen 0, 1366x768x24" selenium-standalone start -- -role hub -debug
+
+#create a symbolic link in /etc/init.d, and configure it to run
+sudo ln -s /usr/local/bin/selenium-standalone /etc/init.d/
+sudo update-rc.d selenium-standalone defaults
+
+
+sudo reboot
+
+#check what ports are open
+ps -ef | grep selenium
+
+
+#kill process ID
+sudo kill <ID>
+
+
+#install libraries
+sudo apt-get install libxi6 libgconf-2-4
+
+
+Window Resolution Notes: 
+This can be done on C# code by specifying what Window Size you would like your app to run on.
+
+For browsers (Won't work with Opera)
+driver.Manage().Window.Size = new System.Drawing.Size(480, 320);
+
+For Opera driver
+DesiredCapabilities capabilities = DesiredCapabilities.opera()
+capabilities.setCapability("opera.arguments", "-screenwidth 1024 -screenheight 768")
+https://stackoverflow.com/questions/18596732/specifying-custom-screen-resolution-in-selenium-tests
+
+
+Browser Version Notes:
+#link to download chromeDrivers view notes to see what bersions of chrome they support
+https://chromedriver.storage.googleapis.com/index.html?path=&sort=desc
+
+Set up nodes that run specific versions and browsers
+https://community.perfectomobile.com/posts/1101012-selenium-grid-server-configuration-hub-node-setup-for-chrome-firefox-safari-ie
+
+/usr/local/lib/node_modules/selenium-standalone/lib/default-config.js
+
+
+xvfb-run -a --server-args="-screen 0, 1366x768x24" selenium-standalone start -- -role node -hub http://174.129.70.77:4444/grid/register -port 5556

@@ -1,0 +1,91 @@
+/* Only keeps the 10 most recent builds and used to schedule triggers
+*
+* properties([[$class: 'BuildDiscarderProperty',
+*                strategy: [$class: 'LogRotator', numToKeepStr: '10']],
+*                pipelineTriggers([cron('H/* * * * *')]),
+*                ])
+*/                
+
+node {
+    try {
+        notifyBuild('STARTED')
+
+    stage('Checkout') {
+    checkout([$class: 'SubversionSCM',
+        additionalCredentials: [], 
+        excludedCommitMessages: '', 
+        excludedRegions: '', 
+        excludedRevprop: '', 
+        excludedUsers: 'buildbot', 
+        filterChangelog: false, 
+        ignoreDirPropChanges: false, 
+        includedRegions: '', 
+        locations: [[credentialsId: 'a8cmy-cr3ds-8894-a8zb-e4c1633z7f37', 
+            depthOption: 'infinity', 
+            ignoreExternalsOption: true, 
+            local: '.', 
+            remote: "http://my.repo.location.com/svn/folder/subfolder"]],
+        workspaceUpdater: [$class: 'UpdateUpdater']])
+    }
+    
+    stage('Build webApp') {          
+    bat 'C:/"Program Files (x86)/Microsoft Visual Studio"/2017/Community/MSBuild/15.0/Bin/MSBuild.exe webApp/webApp.sln  /m  /p:VisualStudioVersion=15.0'   //msbuild     
+}
+
+    stage('Build Selenium Tests') {          
+    bat 'C:/"Program Files (x86)/Microsoft Visual Studio"/2017/Community/MSBuild/15.0/Bin/MSBuild.exe screenShots/screenShots.sln  /m  /p:VisualStudioVersion=15.0'   //msbuild     
+}
+
+    stage('Test: Check if IIS webApp ON') {
+    bat 'C:/"Program Files (x86)"/NUnit.org/nunit-console/nunit3-console.exe screenShots/screenShots/bin/Debug/screenShots.dll /result=nunit-result.xml'
+}
+
+} catch (e) {
+    // If there was an exception thrown, the build failed
+    currentBuild.result = "FAILED"
+    throw e
+  } finally {
+    // Success or failure, always send notifications
+    notifyBuild(currentBuild.result)
+    //Publishes test results onto test result analyzer
+    step([$class: 'NUnitPublisher', testResultsPattern: 'TestResult.xml', debug: false, keepJUnitReports: true, skipJUnitArchiver:false, failIfNoResults: true])
+  }
+}
+
+def notifyBuild(String buildStatus = 'STARTED') {
+  // build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+// Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})"
+  
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+ 
+  //send notifications
+  slackSend (color: colorCode, message: summary)
+
+  //send emails
+  emailext (subject: '$DEFAULT_SUBJECT',
+                        body: '$DEFAULT_CONTENT',
+                        recipientProviders: [
+                            [$class: 'CulpritsRecipientProvider'],
+                            [$class: 'DevelopersRecipientProvider'],
+                            [$class: 'RequesterRecipientProvider']
+                        ], 
+                        replyTo: '$DEFAULT_REPLYTO',
+                        to: '$DEFAULT_RECIPIENTS')
+                        
+}

@@ -21,3 +21,9 @@ sudo docker pull selenium/node-firefox
 sudo docker run -d -p 4444:4444 --name selenium-hub -P selenium/hub
 sudo docker run -d -P --name chromeBro1 --link selenium-hub:hub selenium/node-chrome-debug
 sudo docker run -d -P --name foxBro1 --link selenium-hub:hub selenium/node-firefox-debug
+
+
+
+
+sudo docker update --restart=always selenium-hub
+sudo docker run -d -p 4444:4444 --name selenium-hub -P selenium/hub --restart always selenium-hub
