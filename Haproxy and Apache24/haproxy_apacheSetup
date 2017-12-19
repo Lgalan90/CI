@@ -1,0 +1,198 @@
+#1. Identify the OS the server is running: 
+FreeBSD 11.1-RELEASE-p4 amd64
+
+#2. Set the host name to your first name. The host name should persist if the machine is rebooted. 
+su - root 
+ee /etc/rc.conf
+add hostname="luis" to the file
+
+#3. Write the simplest possible script/program to send an email with the following:
+location: /usr/home/ec2-user/luisbash.sh
+crontab -e   # */5 * * * * /usr/home/ec2-user/luisbash.sh
+
+# this is for the email
+#!/bin/sh
+{
+  echo $(hostname)
+  echo ""
+  echo "Uptime: " "$(uptime)"
+  echo ""
+  echo "Who is on the server? " "$(who)"
+  echo ""
+  echo "Recent logs: " "$(last)"
+  echo ""
+  echo "Disk Usage: " "$(df -h)"
+  echo ""
+  echo "Top 5 largest files for all disks from root: " "$(find / -type f -ls | sort -k 7 -r -n | head -5)"
+  echo ""
+  echo "Top to display system load: " "$(top)"
+  echo ""
+  echo "View Free vs Used Memory: " "$(freecolor -t -m -o)"
+  echo ""
+  echo "Top 5 Resource Users: " "$(ps -eo pcpu,pid,user,pmem,vsize | sort -k1 -nr | head -5)"
+
+}| mail -s "Homework Report" luisalejogalan@gmail.com lorenzo.bivens@cbre.com
+
+#this is for the cgi-bin
+#!/bin/sh
+
+echo "Content-type: text/html"
+echo ""
+echo "<!DOCTYPE html>"
+echo "<html>"
+echo "<head>"
+echo "<title>Luis</title>"
+echo "</head>"
+echo "<body>"
+echo "Todays date is $(date)<br><br>"
+echo "Current Hostname: $(hostname)<br><br>"
+echo "Uptime: $(uptime)<br><br>"
+echo "Who is on the server?<br>"
+echo "<pre>$(who)</pre><br><br>"
+echo "Recent logs:<br>"
+echo "<pre>$(last)</pre><br><br>"
+echo "Disk Usage:<br> "
+echo "<pre>$(df -h)</pre><br><br>"
+echo "Top 5 largest files for all disks from root:<br>"
+echo "<pre>$(find / -type f -ls | sort -k 7 -r -n | head -5)</pre><br><br>"
+echo "Top to display system load:<br>"
+echo "<pre>$(top)</pre><br><br>"
+echo "View Free vs Used Memory:<br>"
+echo "<pre>$(freecolor -t -m -o)</pre><br><br>""
+echo "Top 5 Resource Users:<br>"
+echo "<pre>$(ps -eo pcpu,pid,user,pmem,vsize | sort -k1 -nr | head
+-5)</pre><br><br>"
+echo "</body>"
+echo "</html>"
+
+
+#4. Compile and install the latest stable version of 'haproxy'
+
+#to install https://dzone.com/articles/high-availability-load
+
+#to edit 
+nano /usr/local/etc/haproxy.conf
+global
+      maxconn 4096
+      pidfile /var/run/haproxy.pid
+      daemon
+
+
+defaults
+      mode http
+      retries 3
+      option redispatch
+      maxconn 2000
+      contimeout 5000
+      clitimeout 50000
+      srvtimeout 50000
+
+# galaxy is the local distributing load onto Earth and Moon loadbalancers
+listen GALAXY
+bind 000.000.000:80. #use ifconfig to view inet or ip
+      mode http
+      cookie GALAXY insert
+      balance roundrobin
+      option httpclose
+      option forwardfor
+      server EARTH 192.168.0.2:8080 cookie GALAXY_SERVER_01 check
+      server MOON 192.168.0.3:8080 cookie GALAXY_SERVER_02 check
+
+# to view stats online 
+listen stats
+    bind :9000
+    mode http
+    stats enable
+    stats hide-version
+    stats realm Haproxy\ Statistics
+    stats uri /
+    stats auth user:pass
+
+#to start
+/usr/local/etc/rc.d/haproxy start
+
+#to view n server
+http://000.000.000:9000/
+
+#5. Use 'haproxy' and the tooling of your choice to serve the results of the monitoring script that you previously wrote. The result should:
+#  - redirect all `http` traffic to `https`
+#  - provide a proper `https` connection
+#  - ask for a user and a password to be able to see the results
+
+nano /usr/local/etc/apache24/httpd.conf
+  uncommented LoadModule cgi_module libexec/apache24/mod_cgi.so
+  added luisbash.sh to /usr/local/www/apache24/cgi-bin/luisbash.sh
+  view on http://000.000.000/cgi-bin/script.sh
+
+#setup password for http://000.000.000/cgi-bin/script.sh
+
+created /usr/local/www/apache24/passwd folder
+htpasswd -c /usr/local/www/apache24/passwd/.htpasswd lorenzo
+
+user: user
+password: pass
+
+#updated the /usr/local/etc/apache24/httpd.conf file under cgi-bin directory 
+<Directory "/usr/local/www/apache24/cgi-bin">
+     AuthUserFile '/usr/local/www/apache24/passwd/.htpasswd'
+     AuthName 'Private Scripts'
+     AuthType Basic
+     Require valid-user
+
+     Order allow,deny
+     Allow from all
+</Directory>
+
+#installing ssl 
+currently named: 
+
+created /usr/local/etc/apache24/ssl folder
+openssl genrsa -des3 -out server.key 1024
+openssl req -new -key server.key -out server.csr
+cp server.key server.key.org
+openssl rsa -in server.key.org -out server.key
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+chmod 400 /usr/local/etc/apache24/ssl/server.key
+chmod 400 /usr/local/etc/apache24/ssl/server.crt
+
+#added to /usr/local/etc/apache24/extra/httpd-ssl.conf
+<VirtualHost 000.000.000:443>
+
+DocumentRoot "/usr/local/www/apache24/data"
+ServerName 000.000.000:443
+ServerAdmin luisalejogalan@gmail.com
+ErrorLog "/var/log/httpd-error.log"
+TransferLog "/var/log/httpd-access.log"
+
+#added to /usr/local/etc/apache24/extra/httpd-vhosts.conf
+#followed https://blog.iandreev.com/?p=2865 to set virtual host 
+#and https://www.akadia.com/services/ssh_test_certificate.html to create ssl
+
+# redirects to https
+<VirtualHost *:80>
+    ServerName 000.000.000
+    Redirect permanent / https://000.000.000/
+</VirtualHost>
+
+<VirtualHost *:443>
+    SSLEngine On
+    SSLCertificateFile /usr/local/etc/apache24/ssl/server.crt
+    SSLCertificateKeyFile /usr/local/etc/apache24/ssl/server.key
+    ServerAdmin luisalejogalan@gmail.com
+    DocumentRoot "/usr/local/www/apache24/cgi-bin"
+    ServerName 000.000.000
+    <Directory "/usr/local/www/apache24/cgi-bin">
+        AuthUserFile '/usr/local/www/apache24/passwd/.htpasswd'
+        AuthName 'Private Scripts'
+        AuthType Basic
+        Require valid-user
+        Order allow,deny
+        Allow from all
+    </Directory>
+</VirtualHost>
+
+#    Uncomment:
+#    Include etc/apache22/extra/httpd-ssl.conf
+# Virtual hosts
+# Include etc/apache24/extra/httpd-vhosts.conf
+
