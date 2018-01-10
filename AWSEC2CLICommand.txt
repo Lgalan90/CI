@@ -1,5 +1,5 @@
 #create instance
-aws ec2 run-instances --image-id ami-cd0f5cb6 --count 1 --instance-type t2.micro --key-name cIcDserver --subnet-id subnet-rh11223m --associate-public-ip-address --security-group-ids ab-abcd123 --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20}}]' --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=CI SeleniumDocker Hub}]' --user-data file://dockerSeleniumUserData.sh
+aws ec2 run-instances --image-id ami-abd123a --count 1 --instance-type t2.micro --key-name cIcDserver --subnet-id subnet-rh11223m --associate-public-ip-address --security-group-ids ab-abcd123 --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20}}]' --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=CI SeleniumDocker Hub}]' --user-data file://dockerSeleniumUserData.sh
 
 
 #terminate instance
